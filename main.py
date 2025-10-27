@@ -5,7 +5,8 @@ import random
 # Импорт конфигурации, данных уровня и классов спрайтов
 from config import *
 from level_data import TILE_MAP,  LEVEL_4
-from sprites import Player, Key, Spike, Tile, Door
+# ОБЯЗАТЕЛЬНО: Импортируем load_and_scale, чтобы использовать ее для фона
+from sprites import Player, Key, Spike, Tile, Door, load_and_scale 
 
 # --- Инициализация Pygame ---
 pygame.init()
@@ -13,6 +14,17 @@ screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Квест-платформер 'Поиск Ключей'")
 clock = pygame.time.Clock()
 font = pygame.font.Font(None, 40)
+# НОВОЕ: Крупный шрифт для заголовков
+font_large = pygame.font.Font(None, 60) 
+# ИЗМЕНЕНО: Меньший шрифт для основного текста помощи (с 30 на 25)
+font_small = pygame.font.Font(None, 25)
+
+# --- ЗАГРУЗКА ФОНА ---
+# Загружаем фон, используя функцию из sprites.py. Если air.png не найден, будет черный плейсхолдер.
+
+BACKGROUND_IMAGE = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+BACKGROUND_IMAGE.fill(GREY) # Резервный фон
+    
 
 # --- Группы спрайтов ---
 all_sprites = pygame.sprite.Group()
@@ -22,10 +34,26 @@ spike_group = pygame.sprite.Group()
 door_group = pygame.sprite.Group()
 
 # --- Переменные игры ---
-GAME_STATE = "START" # START, PLAYING, CONGRATULATIONS
+# Добавлено состояние HELP
+GAME_STATE = "START" # START, PLAYING, CONGRATULATIONS, HELP 
 player = None
 spawn_point = (0, 0)
 available_spawn_points = [] # Список пустых координат для спауна ключей
+
+
+# ИЗМЕНЕНО: Обновленный текст помощи, разбитый на строки
+HELP_TEXT = [
+    "",
+    "",
+    "1) Чтобы двигаться, используй стрелочки Влево/Вправо",
+    "   (и стрелочку Вверх для прыжка).",
+    "2) Доски - это ступеньки. С помощью них можно спускаться",
+    "   (стрелочка Вниз) и подниматься (прыжок).",
+    "3) Лава (шипы) убивает. Будь осторожен!",
+    "4) Найди и собери все ключи,",
+    "   чтобы открыть дверь и победить.",
+    ""
+]
 
 # --- Функции игрового процесса ---
 
@@ -49,16 +77,18 @@ def load_level(level):
             
             tile_type_name = TILE_MAP.get(char, 'Air')
 
+            # --- ИЗМЕНЕНИЕ: УДАЛЯЕМ АРГУМЕНТЫ ЦВЕТА ИЗ Tile() ---
             if char == 'W':
-                tile = Tile(x, y, 'Wall', GREEN)
+                tile = Tile(x, y, 'Wall') # Теперь цвет берется из текстуры в sprites.py
                 all_sprites.add(tile)
                 solid_tiles.add(tile)
             
             elif char == 'P':
-                tile = Tile(x, y, 'Platform', LIGHT_GREY)
+                tile = Tile(x, y, 'Platform') # Теперь цвет берется из текстуры в sprites.py
                 all_sprites.add(tile)
                 solid_tiles.add(tile)
                 
+            # Шипы, Дверь и Точка спауна не меняются
             elif char == 'S':
                 spike = Spike(x, y)
                 all_sprites.add(spike)
@@ -71,7 +101,6 @@ def load_level(level):
 
             elif char == 'B':
                 spawn_point = (x, y)
-                # Игрок создается после цикла, чтобы убедиться, что spawn_point определен
 
             # Если это пустое место, добавляем его в список для спауна ключей
             if tile_type_name in ['Air', 'Spawn']:
@@ -88,19 +117,21 @@ def random_key_spawn():
     # Удаляем все старые ключи, если они есть
     for key in keys_group:
         key.kill()
-
-    # Берем случайные точки для спауна
-    spawn_coords = random.sample(available_spawn_points, KEY_TO_WIN)
+    keys_group.empty() # Обязательно очищаем группу после .kill()
     
-    for x, y in spawn_coords:
-        key = Key(x, y)
-        all_sprites.add(key)
-        keys_group.add(key)
-    #  проверка на работу двери
-    # for i in range(3):
-    #     key = Key(72+i* 24, 900)
-    #     all_sprites.add(key)
-    #     keys_group.add(key)
+    try:
+        if len(available_spawn_points) >= KEY_TO_WIN:
+            spawn_coords = random.sample(available_spawn_points, KEY_TO_WIN)
+        else:
+             spawn_coords = available_spawn_points
+             
+        for x, y in spawn_coords:
+            key = Key(x, y)
+            all_sprites.add(key)
+            keys_group.add(key)
+            
+    except ValueError as e:
+        print(f"Ошибка при размещении ключей: {e}. Проверьте, достаточно ли свободных мест на карте.")
 
 
 def reset_level():
@@ -115,34 +146,43 @@ def reset_level():
     
     # Случайный спаун ключей заново
     random_key_spawn()
+    
+    # Обновление двери
+    for door in door_group:
+        door.update_visual(player.keys_collected)
 
 
 def draw_fog_of_war():
     """Создание эффекта ограниченной видимости вокруг игрока."""
-    # 1. Черный слой "тумана"
-    fog_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
-    fog_surface.fill(BLACK)
+    # 1. Черный слой "тумана" с альфа-каналом
+    fog_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+    # Заполняем черным с небольшой прозрачностью (230 из 255)
+    fog_surface.fill((0, 0, 0, 230)) 
     
-    # 2. Установка режима смешивания для "вырезания" круга
-    # Этот режим позволяет "стереть" часть поверхности, делая ее прозрачной
-    fog_surface.set_colorkey(WHITE) 
-    
-    # 3. Рисуем "окно света" (круг) белым цветом
-    # Круг центрируется на игроке (относительно экрана)
+    # 2. Рисуем "окно света" (круг) полностью прозрачным цветом
     center_x = player.rect.centerx
     center_y = player.rect.centery
     
-    pygame.draw.circle(fog_surface, WHITE, (center_x, center_y), FOG_RADIUS)
+    # Рисуем круг, используя режим BLEND_RGBA_ZERO для "стирания" пикселей
+    # Если pygame.SRCALPHA используется, это не обязательно, но для надежности
+    pygame.draw.circle(
+        fog_surface, 
+        (0, 0, 0, 0), # Полностью прозрачный цвет
+        (center_x, center_y), 
+        FOG_RADIUS
+    )
     
-    # 4. Наложение тумана на основной экран
+    # 3. Наложение тумана на основной экран
     screen.blit(fog_surface, (0, 0))
 
 
 # --- Основные экраны ---
 
-def draw_text(text, surface, pos, color=WHITE):
-    """Вспомогательная функция для вывода текста."""
-    text_surface = font.render(text, True, color)
+def draw_text(text, surface, pos, color=WHITE, current_font=None):
+    """Вспомогательная функция для вывода текста с выбором шрифта."""
+    if current_font is None:
+        current_font = font
+    text_surface = current_font.render(text, True, color)
     rect = text_surface.get_rect(center=pos)
     surface.blit(text_surface, rect)
 
@@ -150,20 +190,55 @@ def draw_text(text, surface, pos, color=WHITE):
 def start_screen():
     """Начальный экран."""
     draw_text("Найди все ключи и открой дверь)", screen, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 50))
-    draw_text("Соберите 3 желтых ключа, чтобы открыть дверь!", screen, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
+    draw_text("", screen, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
     draw_text("Нажмите любую клавишу для начала...", screen, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50))
+    # НОВОЕ: Инструкция про кнопку H
+    draw_text("Нажмите 'H' для просмотра правил.", screen, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 100))
+
 
 def congratulations_screen():
     """Финальный экран (Открытка)."""
-    screen.fill(RED) # Яркий праздничный фон
+    screen.fill(GREY) # Яркий праздничный фон
     
     # Центральное поздравление
-    draw_text("ПОЗДРАВЛЯЮ!", screen, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 100), YELLOW)
+    draw_text("ПОЗДРАВЛЯЮ!", screen, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 200), YELLOW, font_large)
     
-    # Ваше личное сообщение (можно заменить на загрузку картинки-открытки)
-    final_message = "Ты нашла все ключи и открыла моё сердце! С Днем Рождения!"
-    draw_text(final_message, screen, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2), WHITE)
-    draw_text("", screen, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50), WHITE)
+    # Ваше личное сообщение
+    draw_text("З Днем Народження, найгарніша блондинко Відня!", screen, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 150), WHITE)
+    draw_text("Ти шалено яскрава і красива!", screen, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 100), WHITE)
+    draw_text("Я дуже радий, що познайомився з тобою цього року.", screen, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2-50), WHITE)
+    draw_text("Хочу, щоб ти й надалі освітлювала цей світ своєю красою)", screen, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2), WHITE)
+    draw_text("Твой: Миша)", screen, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50), WHITE)
+
+# ИЗМЕНЕНО: Функция для отображения экрана помощи (использует font_small)
+def help_screen():
+    """Отображает экран с правилами игры."""
+    
+    # Затемнение фона
+    s = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+    s.set_alpha(200) # Прозрачность
+    s.fill(BLACK)
+    screen.blit(s, (0, 0))
+    
+    # Расчет начальной позиции для центрирования текста. Скорректировано для меньшего шрифта.
+    y_pos = SCREEN_HEIGHT // 2 - 150 # Подняли немного выше, чтобы вместить больше строк
+    
+    for i, line in enumerate(HELP_TEXT):
+        text_color = WHITE
+        current_font = font_small # Меньший шрифт по умолчанию
+        line_spacing = 30 # Уменьшенный интервал
+        
+        if i == 0: # Заголовок
+            current_font = font_large
+            text_color = YELLOW
+            line_spacing = 60 # Больший интервал после заголовка
+        elif line.strip() == "":
+            line_spacing = 20 # Меньший интервал для пустых строк
+        
+        draw_text(line, screen, (SCREEN_WIDTH // 2, y_pos), text_color, current_font)
+        
+        # Обновление вертикальной позиции для следующей строки
+        y_pos += line_spacing
 
 
 # --- Главный цикл игры ---
@@ -176,14 +251,35 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         
-        # Переход со стартового экрана
-        if GAME_STATE == "START" and event.type == pygame.KEYDOWN:
-            GAME_STATE = "PLAYING"
+        if event.type == pygame.KEYDOWN:
+            # НОВОЕ: Обработка кнопки H для помощи
+            if event.key == pygame.K_h:
+                if GAME_STATE == "PLAYING":
+                    GAME_STATE = "HELP" # Вход в помощь
+                elif GAME_STATE == "HELP":
+                    GAME_STATE = "PLAYING" # Выход из помощи
+                    
+            # Обработка ESCAPE
+            if event.key == pygame.K_ESCAPE:
+                if GAME_STATE == "CONGRATULATIONS":
+                    running = False # Выход из игры после победы
+                elif GAME_STATE == "HELP":
+                    GAME_STATE = "PLAYING" # Выход из помощи
+            
+            # Переход со стартового экрана
+            if GAME_STATE == "START":
+                if event.key != pygame.K_h: # Начинаем игру на любую клавишу, кроме H
+                    GAME_STATE = "PLAYING"
 
-    screen.fill(GREY) # Фон
+    # --- ИЗМЕНЕНИЕ: Рендеринг фона первым ---
+    screen.blit(BACKGROUND_IMAGE, (0, 0))
 
     if GAME_STATE == "START":
         start_screen()
+
+    # НОВОЕ: Состояние помощи
+    elif GAME_STATE == "HELP":
+        help_screen()
 
     elif GAME_STATE == "PLAYING":
         keys = pygame.key.get_pressed()
@@ -191,7 +287,7 @@ while running:
 
         # 1. Обновление
         all_sprites.update()
-        player.update_physics(solid_tiles) # Обновление физики игрока относительно тайлов
+        player.update_physics(solid_tiles) 
         
         # Обновление двери
         for door in door_group:
@@ -212,7 +308,7 @@ while running:
         # Player <-> Door
         door_hits = pygame.sprite.spritecollide(player, door_group, False)
         for door in door_hits:
-            door.on_collide(player, sys.modules[__name__]) # Передача ссылки на главный модуль для смены GAME_STATE
+            door.on_collide(player, sys.modules[__name__]) 
         
         # 3. Рендеринг
         all_sprites.draw(screen)

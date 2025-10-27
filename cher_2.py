@@ -14,10 +14,6 @@ screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Квест-платформер 'Поиск Ключей'")
 clock = pygame.time.Clock()
 font = pygame.font.Font(None, 40)
-# НОВОЕ: Крупный шрифт для заголовков
-font_large = pygame.font.Font(None, 60) 
-# ИЗМЕНЕНО: Меньший шрифт для основного текста помощи (с 30 на 25)
-font_small = pygame.font.Font(None, 25)
 
 # --- ЗАГРУЗКА ФОНА ---
 # Загружаем фон, используя функцию из sprites.py. Если air.png не найден, будет черный плейсхолдер.
@@ -34,25 +30,20 @@ spike_group = pygame.sprite.Group()
 door_group = pygame.sprite.Group()
 
 # --- Переменные игры ---
-# Добавлено состояние HELP
-GAME_STATE = "START" # START, PLAYING, CONGRATULATIONS, HELP 
+GAME_STATE = "START" # START, PLAYING, CONGRATULATIONS
 player = None
 spawn_point = (0, 0)
 available_spawn_points = [] # Список пустых координат для спауна ключей
 
 
-# ИЗМЕНЕНО: Обновленный текст помощи, разбитый на строки
 HELP_TEXT = [
+    "--- ПРАВИЛА ИГРЫ (Нажмите H или ESC для выхода) ---",
     "",
-    "",
-    "1) Чтобы двигаться, используй стрелочки Влево/Вправо",
-    "   (и стрелочку Вверх для прыжка).",
-    "2) Доски - это ступеньки. С помощью них можно спускаться",
-    "   (стрелочка Вниз) и подниматься (прыжок).",
-    "3) Лава (шипы) убивает. Будь осторожен!",
-    "4) Найди и собери все ключи,",
-    "   чтобы открыть дверь и победить.",
-    ""
+    "1) Чтобы двигаться, используй стрелочки (Влево/Вправо).",
+    "2) Для прыжка используй стрелочку Вверх.",
+    "3) Доски ('P') - это ступеньки, с помощью них можно спускаться (стрелочка Вниз).",
+    "4) Лава (шипы) убивает. Будь осторожен!",
+    "5) Собери все ключи, чтобы открыть дверь и перейти на следующий уровень."
 ]
 
 # --- Функции игрового процесса ---
@@ -178,11 +169,9 @@ def draw_fog_of_war():
 
 # --- Основные экраны ---
 
-def draw_text(text, surface, pos, color=WHITE, current_font=None):
-    """Вспомогательная функция для вывода текста с выбором шрифта."""
-    if current_font is None:
-        current_font = font
-    text_surface = current_font.render(text, True, color)
+def draw_text(text, surface, pos, color=WHITE):
+    """Вспомогательная функция для вывода текста."""
+    text_surface = font.render(text, True, color)
     rect = text_surface.get_rect(center=pos)
     surface.blit(text_surface, rect)
 
@@ -192,53 +181,22 @@ def start_screen():
     draw_text("Найди все ключи и открой дверь)", screen, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 50))
     draw_text("", screen, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
     draw_text("Нажмите любую клавишу для начала...", screen, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50))
-    # НОВОЕ: Инструкция про кнопку H
-    draw_text("Нажмите 'H' для просмотра правил.", screen, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 100))
-
 
 def congratulations_screen():
     """Финальный экран (Открытка)."""
     screen.fill(GREY) # Яркий праздничный фон
     
     # Центральное поздравление
-    draw_text("ПОЗДРАВЛЯЮ!", screen, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 200), YELLOW, font_large)
+    draw_text("ПОЗДРАВЛЯЮ!", screen, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 200), YELLOW)
     
     # Ваше личное сообщение
+    final_message = "З Днем Народження, найгарніша блондинко Відня! Ти шалено яскрава і красива! Я дуже радий, що познайомився з тобою цього року і хочу, щоб ти й надалі освітлювала цей світ своєю красою)"
+    # draw_text(final_message, screen, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2), WHITE)
     draw_text("З Днем Народження, найгарніша блондинко Відня!", screen, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 150), WHITE)
     draw_text("Ти шалено яскрава і красива!", screen, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 100), WHITE)
     draw_text("Я дуже радий, що познайомився з тобою цього року.", screen, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2-50), WHITE)
     draw_text("Хочу, щоб ти й надалі освітлювала цей світ своєю красою)", screen, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2), WHITE)
     draw_text("Твой: Миша)", screen, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50), WHITE)
-
-# ИЗМЕНЕНО: Функция для отображения экрана помощи (использует font_small)
-def help_screen():
-    """Отображает экран с правилами игры."""
-    
-    # Затемнение фона
-    s = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
-    s.set_alpha(200) # Прозрачность
-    s.fill(BLACK)
-    screen.blit(s, (0, 0))
-    
-    # Расчет начальной позиции для центрирования текста. Скорректировано для меньшего шрифта.
-    y_pos = SCREEN_HEIGHT // 2 - 150 # Подняли немного выше, чтобы вместить больше строк
-    
-    for i, line in enumerate(HELP_TEXT):
-        text_color = WHITE
-        current_font = font_small # Меньший шрифт по умолчанию
-        line_spacing = 30 # Уменьшенный интервал
-        
-        if i == 0: # Заголовок
-            current_font = font_large
-            text_color = YELLOW
-            line_spacing = 60 # Больший интервал после заголовка
-        elif line.strip() == "":
-            line_spacing = 20 # Меньший интервал для пустых строк
-        
-        draw_text(line, screen, (SCREEN_WIDTH // 2, y_pos), text_color, current_font)
-        
-        # Обновление вертикальной позиции для следующей строки
-        y_pos += line_spacing
 
 
 # --- Главный цикл игры ---
@@ -251,35 +209,15 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         
-        if event.type == pygame.KEYDOWN:
-            # НОВОЕ: Обработка кнопки H для помощи
-            if event.key == pygame.K_h:
-                if GAME_STATE == "PLAYING":
-                    GAME_STATE = "HELP" # Вход в помощь
-                elif GAME_STATE == "HELP":
-                    GAME_STATE = "PLAYING" # Выход из помощи
-                    
-            # Обработка ESCAPE
-            if event.key == pygame.K_ESCAPE:
-                if GAME_STATE == "CONGRATULATIONS":
-                    running = False # Выход из игры после победы
-                elif GAME_STATE == "HELP":
-                    GAME_STATE = "PLAYING" # Выход из помощи
-            
-            # Переход со стартового экрана
-            if GAME_STATE == "START":
-                if event.key != pygame.K_h: # Начинаем игру на любую клавишу, кроме H
-                    GAME_STATE = "PLAYING"
+        # Переход со стартового экрана
+        if GAME_STATE == "START" and event.type == pygame.KEYDOWN:
+            GAME_STATE = "PLAYING"
 
     # --- ИЗМЕНЕНИЕ: Рендеринг фона первым ---
     screen.blit(BACKGROUND_IMAGE, (0, 0))
 
     if GAME_STATE == "START":
         start_screen()
-
-    # НОВОЕ: Состояние помощи
-    elif GAME_STATE == "HELP":
-        help_screen()
 
     elif GAME_STATE == "PLAYING":
         keys = pygame.key.get_pressed()

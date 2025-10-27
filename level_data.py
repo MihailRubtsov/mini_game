@@ -2,11 +2,11 @@
 
 # Определение символов для карты
 TILE_MAP = {
-    'W': 'Wall',       # Твердый блок (земля, стена)
-    'P': 'Platform',   # Односторонняя платформа (можно спуститься)
-    'S': 'Spike',      # Шипы (смерть/урон)
+    'W': 'Wall',       # Твердый блок 
+    'P': 'Platform',   # Односторонняя платформа 
+    'S': 'Spike',      # Шипы
     ' ': 'Air',        # Пустое пространство
-    'B': 'Spawn',      # Начальная точка игрока (Base)
+    'B': 'Spawn',      # Начальная точка игрока 
     'D': 'Door'        # Дверь для выхода
 }
 
@@ -147,15 +147,15 @@ LEVEL_4 = [
 "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
 "W          S             SD            W",
 "W                            PP  PPPP  W",
-"WWWWWW PWWWWWWWW  WWWWWWWWWWWW    WWWWWW",
-"W     S  S         S          PPPP     W",
-"W   PPPP P     PSPPPP     PPP        PW",
+"WWWWWW PWWWWWWWW WWWWWWWWWWWWW    WWWWWW",
+"W     S            S          PPPP     W",
+"W   PPPP P     PSPPPP     PPP        P W",
 "W       P     SS      S         PPS    W",
 "WWWWWW    WWWWWWWWWWWWWWWWWWWWWW  WW  WW",
 "W     PPSP                    S P   PP W",
 "W    PPPPP    PPPPPPPP    PPPP   PPPPP W",
 "W   S                    SS    S   W   W",
-"WWWWWWWWWWWWWWWWWWWWWWWW  WWWWWWWW WWWWW",
+"WWWWWWWWWWWWWWWWWWWWWWWW  WWWWWWWW  WWWW",
 "W  S                    PP        P    W",
 "W          SSP  PSPPP   PPPPPPS    PPPPW",
 "WPPPPPP          PPS              S    W",
@@ -166,7 +166,7 @@ LEVEL_4 = [
 "WWWWWWWW WWWWWWW  WWWWWWWWWW  WWWWWWWWWW",
 "W             W P   B       PP  S      W",
 "W SPPPPPP     SP P    PPSPPP    PPPPPPPW",
-"W            S     PPP S         S     W",
+"W            S     PPP S               W",
 "WWWWWWWWWWWWWWWWWWP   WWWW   WWWWWWWWWWW",
 "W    S                     P           W",
 "W    SPP     PPPPPPPP    PP PP    PPP  W",
