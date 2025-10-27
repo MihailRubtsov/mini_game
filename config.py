@@ -7,8 +7,8 @@ TILE_SIZE = 24 # Каждый блок - 48x48 пикселей
 
 # --- Физика ---
 GRAVITY = 0.5
-JUMP_FORCE = -10
-PLAYER_SPEED = 5
+JUMP_FORCE = -9
+PLAYER_SPEED = 4
 FALL_TERMINAL_VELOCITY = 10 # Максимальная скорость падения
 
 # --- Логика игры ---

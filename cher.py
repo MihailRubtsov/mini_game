@@ -4,7 +4,7 @@ import random
 
 # Импорт конфигурации, данных уровня и классов спрайтов
 from config import *
-from level_data import LEVEL_1, TILE_MAP, LEVEL_2, LEVEL_3
+from level_data import LEVEL_1, TILE_MAP, LEVEL_2, LEVEL_3, LEVEL_4
 from sprites import Player, Key, Spike, Tile, Door
 
 # --- Инициализация Pygame ---
@@ -167,7 +167,7 @@ def congratulations_screen():
 
 
 # --- Главный цикл игры ---
-load_level(LEVEL_3)
+load_level(LEVEL_4)
 random_key_spawn()
 running = True
 

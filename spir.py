@@ -1,14 +1,11 @@
 import pygame
 from config import *
-from level_data import LEVEL_1 # Необходим для корректной работы
 
 # --- Базовый класс для всех статических тайлов ---
 class Tile(pygame.sprite.Sprite):
     def __init__(self, x, y, tile_type, color=GREEN):
         super().__init__()
         self.type = tile_type
-        
-        # Загрузка временной поверхности (вместо load_and_scale)
         self.image = pygame.Surface((TILE_SIZE, TILE_SIZE))
         self.image.fill(color)
         
@@ -16,7 +13,6 @@ class Tile(pygame.sprite.Sprite):
         if self.type == 'Platform':
             self.image = pygame.Surface((TILE_SIZE, TILE_SIZE // 4))
             self.image.fill(LIGHT_GREY)
-            # Размещение в нижней части тайла, как односторонняя платформа
             self.rect = self.image.get_rect(topleft=(x, y + TILE_SIZE - TILE_SIZE // 4))
         else:
             self.rect = self.image.get_rect(topleft=(x, y))
@@ -37,7 +33,7 @@ class Player(pygame.sprite.Sprite):
         self.x_vel = 0
         self.y_vel = 0
         self.on_ground = False
-        self.down_pressed = False # Флаг для спуска сквозь платформу (предотвращение многократного срабатывания)
+        self.down_pressed = False # Флаг для спуска сквозь платформу
         self.can_drop = False # Флаг, что игрок может провалиться через платформу
 
         # Состояние игры
@@ -58,13 +54,12 @@ class Player(pygame.sprite.Sprite):
 
         # Спуск сквозь одностороннюю платформу
         if keys[pygame.K_DOWN]:
-            # Разрешаем провалиться только один раз при первом нажатии и стоянии на земле
             if not self.down_pressed and self.on_ground:
-                 self.can_drop = True 
+                 self.can_drop = True # Разрешаем провалиться на один кадр
             self.down_pressed = True
         else:
             self.down_pressed = False
-            self.can_drop = False # Сбрасываем только когда кнопка отпущена
+            self.can_drop = False
 
     def apply_gravity(self):
         # Применение гравитации и ограничение скорости падения
@@ -81,7 +76,7 @@ class Player(pygame.sprite.Sprite):
 
         # 2. Вертикальное движение и коллизия
         self.rect.y += self.y_vel
-        self.on_ground = False # Сброс перед проверкой
+        self.on_ground = False
         self.collide_y(tile_list)
 
     def collide_x(self, tiles):
@@ -108,22 +103,17 @@ class Player(pygame.sprite.Sprite):
             # Логика односторонних платформ (P)
             elif tile.type == 'Platform':
                 if self.rect.colliderect(tile.rect):
-                    # Коллизия только при падении или стоянии
-                    if self.y_vel >= 0: 
+                    # Коллизия только при падении, если верх игрока выше платформы
+                    if self.y_vel >= 0 and self.rect.bottom <= tile.rect.top + TILE_SIZE//4:
                         
-                        # Если не нажата клавиша "Вниз" (т.е. хотим остановиться)
+                        # Если не нажата клавиша "Вниз"
                         if not self.can_drop:
-                            
-                            # Проверяем, что игрок приземлился сверху.
-                            # Если игрок падает (y_vel > 0) и сталкивается с верхней частью платформы, мы его останавливаем.
-                            if self.rect.bottom > tile.rect.top:
-                                self.rect.bottom = tile.rect.top
-                                self.y_vel = 0
-                                self.on_ground = True
+                            self.rect.bottom = tile.rect.top
+                            self.y_vel = 0
+                            self.on_ground = True
                         
-                        # ВНИМАНИЕ: Если can_drop == True, коллизия игнорируется, и игрок падает. 
-                        # can_drop сбрасывается в handle_input, когда отпускают кнопку.
-                        # ВАЖНО: Мы убрали сброс can_drop = False отсюда.
+                        # Сбрасываем флаг, чтобы не проваливаться через следующие платформы
+                        self.can_drop = False
 
 
 # --- Класс Ключа ---
@@ -148,8 +138,7 @@ class Spike(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(topleft=(x, y + TILE_SIZE - TILE_SIZE // 3))
 
     def on_collide(self, game_state_manager):
-        # Вызов функции сброса уровня
-        game_state_manager.reset_level() 
+        game_state_manager.reset_level() # Вызов функции сброса уровня
 
 # --- Класс Двери (Выход) ---
 class Door(pygame.sprite.Sprite):
