@@ -5,7 +5,8 @@ import random
 # Импорт конфигурации, данных уровня и классов спрайтов
 from config import *
 from level_data import TILE_MAP,  LEVEL_4
-from sprites import Player, Key, Spike, Tile, Door
+# ОБЯЗАТЕЛЬНО: Импортируем load_and_scale, чтобы использовать ее для фона
+from sprites import Player, Key, Spike, Tile, Door, load_and_scale 
 
 # --- Инициализация Pygame ---
 pygame.init()
@@ -13,6 +14,13 @@ screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Квест-платформер 'Поиск Ключей'")
 clock = pygame.time.Clock()
 font = pygame.font.Font(None, 40)
+
+# --- ЗАГРУЗКА ФОНА ---
+# Загружаем фон, используя функцию из sprites.py. Если air.png не найден, будет черный плейсхолдер.
+
+BACKGROUND_IMAGE = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+BACKGROUND_IMAGE.fill(GREY) # Резервный фон
+    
 
 # --- Группы спрайтов ---
 all_sprites = pygame.sprite.Group()
@@ -49,16 +57,18 @@ def load_level(level):
             
             tile_type_name = TILE_MAP.get(char, 'Air')
 
+            # --- ИЗМЕНЕНИЕ: УДАЛЯЕМ АРГУМЕНТЫ ЦВЕТА ИЗ Tile() ---
             if char == 'W':
-                tile = Tile(x, y, 'Wall', GREEN)
+                tile = Tile(x, y, 'Wall') # Теперь цвет берется из текстуры в sprites.py
                 all_sprites.add(tile)
                 solid_tiles.add(tile)
             
             elif char == 'P':
-                tile = Tile(x, y, 'Platform', LIGHT_GREY)
+                tile = Tile(x, y, 'Platform') # Теперь цвет берется из текстуры в sprites.py
                 all_sprites.add(tile)
                 solid_tiles.add(tile)
                 
+            # Шипы, Дверь и Точка спауна не меняются
             elif char == 'S':
                 spike = Spike(x, y)
                 all_sprites.add(spike)
@@ -71,7 +81,6 @@ def load_level(level):
 
             elif char == 'B':
                 spawn_point = (x, y)
-                # Игрок создается после цикла, чтобы убедиться, что spawn_point определен
 
             # Если это пустое место, добавляем его в список для спауна ключей
             if tile_type_name in ['Air', 'Spawn']:
@@ -88,19 +97,21 @@ def random_key_spawn():
     # Удаляем все старые ключи, если они есть
     for key in keys_group:
         key.kill()
-
-    # Берем случайные точки для спауна
-    spawn_coords = random.sample(available_spawn_points, KEY_TO_WIN)
+    keys_group.empty() # Обязательно очищаем группу после .kill()
     
-    for x, y in spawn_coords:
-        key = Key(x, y)
-        all_sprites.add(key)
-        keys_group.add(key)
-    #  проверка на работу двери
-    # for i in range(3):
-    #     key = Key(72+i* 24, 900)
-    #     all_sprites.add(key)
-    #     keys_group.add(key)
+    try:
+        if len(available_spawn_points) >= KEY_TO_WIN:
+            spawn_coords = random.sample(available_spawn_points, KEY_TO_WIN)
+        else:
+             spawn_coords = available_spawn_points
+             
+        for x, y in spawn_coords:
+            key = Key(x, y)
+            all_sprites.add(key)
+            keys_group.add(key)
+            
+    except ValueError as e:
+        print(f"Ошибка при размещении ключей: {e}. Проверьте, достаточно ли свободных мест на карте.")
 
 
 def reset_level():
@@ -115,26 +126,33 @@ def reset_level():
     
     # Случайный спаун ключей заново
     random_key_spawn()
+    
+    # Обновление двери
+    for door in door_group:
+        door.update_visual(player.keys_collected)
 
 
 def draw_fog_of_war():
     """Создание эффекта ограниченной видимости вокруг игрока."""
-    # 1. Черный слой "тумана"
-    fog_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
-    fog_surface.fill(BLACK)
+    # 1. Черный слой "тумана" с альфа-каналом
+    fog_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+    # Заполняем черным с небольшой прозрачностью (230 из 255)
+    fog_surface.fill((0, 0, 0, 230)) 
     
-    # 2. Установка режима смешивания для "вырезания" круга
-    # Этот режим позволяет "стереть" часть поверхности, делая ее прозрачной
-    fog_surface.set_colorkey(WHITE) 
-    
-    # 3. Рисуем "окно света" (круг) белым цветом
-    # Круг центрируется на игроке (относительно экрана)
+    # 2. Рисуем "окно света" (круг) полностью прозрачным цветом
     center_x = player.rect.centerx
     center_y = player.rect.centery
     
-    pygame.draw.circle(fog_surface, WHITE, (center_x, center_y), FOG_RADIUS)
+    # Рисуем круг, используя режим BLEND_RGBA_ZERO для "стирания" пикселей
+    # Если pygame.SRCALPHA используется, это не обязательно, но для надежности
+    pygame.draw.circle(
+        fog_surface, 
+        (0, 0, 0, 0), # Полностью прозрачный цвет
+        (center_x, center_y), 
+        FOG_RADIUS
+    )
     
-    # 4. Наложение тумана на основной экран
+    # 3. Наложение тумана на основной экран
     screen.blit(fog_surface, (0, 0))
 
 
@@ -160,10 +178,10 @@ def congratulations_screen():
     # Центральное поздравление
     draw_text("ПОЗДРАВЛЯЮ!", screen, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 100), YELLOW)
     
-    # Ваше личное сообщение (можно заменить на загрузку картинки-открытки)
+    # Ваше личное сообщение
     final_message = "Ты нашла все ключи и открыла моё сердце! С Днем Рождения!"
     draw_text(final_message, screen, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2), WHITE)
-    draw_text("", screen, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50), WHITE)
+    draw_text("Твой: [Имя]", screen, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50), WHITE)
 
 
 # --- Главный цикл игры ---
@@ -180,7 +198,8 @@ while running:
         if GAME_STATE == "START" and event.type == pygame.KEYDOWN:
             GAME_STATE = "PLAYING"
 
-    screen.fill(GREY) # Фон
+    # --- ИЗМЕНЕНИЕ: Рендеринг фона первым ---
+    screen.blit(BACKGROUND_IMAGE, (0, 0))
 
     if GAME_STATE == "START":
         start_screen()
@@ -191,7 +210,7 @@ while running:
 
         # 1. Обновление
         all_sprites.update()
-        player.update_physics(solid_tiles) # Обновление физики игрока относительно тайлов
+        player.update_physics(solid_tiles) 
         
         # Обновление двери
         for door in door_group:
@@ -212,7 +231,7 @@ while running:
         # Player <-> Door
         door_hits = pygame.sprite.spritecollide(player, door_group, False)
         for door in door_hits:
-            door.on_collide(player, sys.modules[__name__]) # Передача ссылки на главный модуль для смены GAME_STATE
+            door.on_collide(player, sys.modules[__name__]) 
         
         # 3. Рендеринг
         all_sprites.draw(screen)

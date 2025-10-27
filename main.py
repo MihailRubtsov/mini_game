@@ -4,7 +4,7 @@ import random
 
 # Импорт конфигурации, данных уровня и классов спрайтов
 from config import *
-from level_data import LEVEL_1, TILE_MAP
+from level_data import TILE_MAP,  LEVEL_4
 from sprites import Player, Key, Spike, Tile, Door
 
 # --- Инициализация Pygame ---
@@ -92,15 +92,15 @@ def random_key_spawn():
     # Берем случайные точки для спауна
     spawn_coords = random.sample(available_spawn_points, KEY_TO_WIN)
     
-    # for x, y in spawn_coords:
-    #     key = Key(x, y)
-    #     all_sprites.add(key)
-    #     keys_group.add(key)
-    #  проверка на работу двери
-    for i in range(3):
-        key = Key(72+i* 24, 900)
+    for x, y in spawn_coords:
+        key = Key(x, y)
         all_sprites.add(key)
         keys_group.add(key)
+    #  проверка на работу двери
+    # for i in range(3):
+    #     key = Key(72+i* 24, 900)
+    #     all_sprites.add(key)
+    #     keys_group.add(key)
 
 
 def reset_level():
@@ -167,7 +167,7 @@ def congratulations_screen():
 
 
 # --- Главный цикл игры ---
-load_level(LEVEL_1)
+load_level(LEVEL_4)
 random_key_spawn()
 running = True
 

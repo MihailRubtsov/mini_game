@@ -2,6 +2,31 @@ import pygame
 from config import *
 from level_data import LEVEL_4 # Необходим для корректной работы
 
+
+
+
+def load_and_scale(path, size_w, size_h=None):
+    """Загружает изображение и масштабирует его до нужного размера."""
+    if size_h is None:
+        size_h = size_w
+        
+    try:
+        # Загрузка с прозрачностью и масштабирование
+        image = pygame.image.load(path).convert_alpha()
+        return pygame.transform.scale(image, (size_w, size_h))
+    except pygame.error as e:
+        print(f"Ошибка загрузки текстуры {path}: {e}. Используется плейсхолдер.")
+        
+        # Создание цветного плейсхолдера, если файл не найден
+        surf = pygame.Surface((size_w, size_h))
+        if 'player' in path: surf.fill(BLUE)
+        elif 'spike' in path: surf.fill(RED)
+        elif 'key' in path: surf.fill(YELLOW)
+        elif 'wall' in path: surf.fill(GREEN)
+        elif 'door' in path: surf.fill(LIGHT_GREY)
+        else: surf.fill(BLACK)
+        return surf
+
 # --- Базовый класс для всех статических тайлов ---
 class Tile(pygame.sprite.Sprite):
     def __init__(self, x, y, tile_type, color=GREEN):
@@ -9,13 +34,15 @@ class Tile(pygame.sprite.Sprite):
         self.type = tile_type
         
         # Загрузка временной поверхности (вместо load_and_scale)
-        self.image = pygame.Surface((TILE_SIZE, TILE_SIZE))
-        self.image.fill(color)
+        # self.image = pygame.Surface((TILE_SIZE, TILE_SIZE))
+        # self.image.fill(color)
+        self.image = load_and_scale(ASSET_PATHS['wall'], TILE_SIZE, TILE_SIZE)
         
         # Для односторонних платформ делаем их тоньше и другого цвета
         if self.type == 'Platform':
-            self.image = pygame.Surface((TILE_SIZE, TILE_SIZE // 4))
-            self.image.fill(LIGHT_GREY)
+            # self.image = pygame.Surface((TILE_SIZE, TILE_SIZE // 4))
+            # self.image.fill(LIGHT_GREY)
+            self.image = load_and_scale(ASSET_PATHS['platform'], TILE_SIZE, TILE_SIZE // 4)
             # Размещение в нижней части тайла, как односторонняя платформа
             self.rect = self.image.get_rect(topleft=(x, y + TILE_SIZE - TILE_SIZE // 4))
         else:
@@ -29,9 +56,11 @@ class Player(pygame.sprite.Sprite):
         self.height = TILE_SIZE
         
         # Визуальное представление (временное)
-        self.image = pygame.Surface((self.width, self.height))
-        self.image.fill(BLUE)
+        self.image = load_and_scale(ASSET_PATHS['player'], self.width, self.height)
         self.rect = self.image.get_rect(topleft=(x, y))
+        # self.image = pygame.Surface((self.width, self.height))
+        # self.image.fill(BLUE)
+        # self.rect = self.image.get_rect(topleft=(x, y))
 
         # Физика
         self.x_vel = 0
@@ -52,7 +81,7 @@ class Player(pygame.sprite.Sprite):
             self.x_vel = PLAYER_SPEED
         
         # Прыжок
-        if keys[pygame.K_SPACE] and self.on_ground:
+        if keys[pygame.K_UP] and self.on_ground:
             self.y_vel = JUMP_FORCE
             self.on_ground = False
 
@@ -130,8 +159,11 @@ class Player(pygame.sprite.Sprite):
 class Key(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__()
-        self.image = pygame.Surface((TILE_SIZE // 2, TILE_SIZE // 2))
-        self.image.fill(YELLOW) # Желтый цвет для ключа
+        # self.image = pygame.Surface((TILE_SIZE // 2, TILE_SIZE // 2))
+        # self.image.fill(YELLOW) # Желтый цвет для ключа
+        # self.rect = self.image.get_rect(center=(x + TILE_SIZE // 2, y + TILE_SIZE // 2))
+        size = TILE_SIZE // 2
+        self.image = load_and_scale(ASSET_PATHS['key'], size)
         self.rect = self.image.get_rect(center=(x + TILE_SIZE // 2, y + TILE_SIZE // 2))
 
     def on_collide(self, player):
@@ -142,28 +174,55 @@ class Key(pygame.sprite.Sprite):
 class Spike(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__()
-        self.image = pygame.Surface((TILE_SIZE, TILE_SIZE // 3))
-        self.image.fill(RED) # Красный цвет для шипов
-        # Размещение на нижней границе тайла
-        self.rect = self.image.get_rect(topleft=(x, y + TILE_SIZE - TILE_SIZE // 3))
+        # self.image = pygame.Surface((TILE_SIZE, TILE_SIZE // 3))
+        # self.image.fill(RED) # Красный цвет для шипов
+        # # Размещение на нижней границе тайла
+        # self.rect = self.image.get_rect(topleft=(x, y + TILE_SIZE - TILE_SIZE // 3))
+        height = TILE_SIZE // 3
+        self.image = load_and_scale(ASSET_PATHS['spike'], TILE_SIZE, height)
+        self.rect = self.image.get_rect(topleft=(x, y + TILE_SIZE - height))
 
     def on_collide(self, game_state_manager):
         # Вызов функции сброса уровня
         game_state_manager.reset_level() 
 
 # --- Класс Двери (Выход) ---
+# class Door(pygame.sprite.Sprite):
+#     def __init__(self, x, y):
+#         super().__init__()
+#         self.image = pygame.Surface((TILE_SIZE, TILE_SIZE * 2)) # Дверь выше игрока
+#         self.image.fill(BLUE) # Изначально синяя (закрытая)
+#         self.rect = self.image.get_rect(topleft=(x, y - TILE_SIZE)) # Размещаем над уровнем пола
+
+#     def update_visual(self, keys_collected):
+#         # Визуальное изменение двери, если все ключи собраны
+#         if keys_collected >= KEY_TO_WIN:
+#             self.image.fill(GREEN) # Зеленый цвет (открытая)
+
+#     def on_collide(self, player, game_state_manager):
+#         if player.keys_collected >= KEY_TO_WIN:
+#             game_state_manager.GAME_STATE = "CONGRATULATIONS" # Переключение на финальный экран
+
+
 class Door(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__()
-        self.image = pygame.Surface((TILE_SIZE, TILE_SIZE * 2)) # Дверь выше игрока
-        self.image.fill(BLUE) # Изначально синяя (закрытая)
+        # Дверь должна быть высотой 2 тайла
+        door_height = TILE_SIZE * 2
+        
+        # --- ЗАГРУЗКА ДВУХ ТЕКСТУР ---
+        self.image_closed = load_and_scale(ASSET_PATHS['door_closed'], TILE_SIZE, door_height)
+        self.image_open = load_and_scale(ASSET_PATHS['door_open'], TILE_SIZE, door_height)
+        
+        self.image = self.image_closed # Изначально закрытая
         self.rect = self.image.get_rect(topleft=(x, y - TILE_SIZE)) # Размещаем над уровнем пола
 
     def update_visual(self, keys_collected):
-        # Визуальное изменение двери, если все ключи собраны
         if keys_collected >= KEY_TO_WIN:
-            self.image.fill(GREEN) # Зеленый цвет (открытая)
+            self.image = self.image_open # Зеленый цвет (открытая)
+        else:
+            self.image = self.image_closed
 
     def on_collide(self, player, game_state_manager):
         if player.keys_collected >= KEY_TO_WIN:
-            game_state_manager.GAME_STATE = "CONGRATULATIONS" # Переключение на финальный экран
+            game_state_manager.GAME_STATE = "CONGRATULATIONS"
