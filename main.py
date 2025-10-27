@@ -143,7 +143,7 @@ def draw_text(text, surface, pos, color=WHITE):
 
 def start_screen():
     """Начальный экран."""
-    draw_text("Квест 'Поиск Ключей'", screen, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 50))
+    draw_text("Найди все ключи и открой дверь)", screen, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 50))
     draw_text("Соберите 3 желтых ключа, чтобы открыть дверь!", screen, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
     draw_text("Нажмите любую клавишу для начала...", screen, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50))
 
