@@ -1,6 +1,6 @@
 import pygame
 from config import *
-from level_data import LEVEL_1 # Необходим для корректной работы
+from level_data import LEVEL_4 # Необходим для корректной работы
 
 # --- Базовый класс для всех статических тайлов ---
 class Tile(pygame.sprite.Sprite):

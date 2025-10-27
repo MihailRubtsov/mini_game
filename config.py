@@ -24,3 +24,14 @@ YELLOW = (255, 255, 0)
 BLUE = (0, 0, 200)
 GREY = (50, 50, 50)
 LIGHT_GREY = (150, 150, 150)
+
+ASSET_PATHS = {
+    'player': 'assets/graphics/air.png', # Используем air.png как плейсхолдер игрока
+    'wall': 'assets/graphics/wall.png',
+    'platform': 'assets/graphics/air.png', # Используем air.png
+    'spike': 'assets/graphics/sss.png',
+    'key': 'assets/graphics/keeey.png',
+    'door_closed': 'assets/graphics/door.png',
+    'door_open': 'assets/graphics/air.png', # Нужно будет создать open_door.png
+    'background': 'assets/graphics/wall.png', # Используем wall как временный фон
+}
