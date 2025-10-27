@@ -1,23 +1,33 @@
 import pygame
 from config import *
-from level_data import LEVEL_4 # Необходим для корректной работы
+from level_data import LEVEL_4
+import os
+import sys # Необходим для корректной работы
 
 
 
 
 def load_and_scale(path, size_w, size_h=None):
-    """Загружает изображение и масштабирует его до нужного размера."""
+    """Загружает изображение с правильным путём в PyInstaller."""
     if size_h is None:
         size_h = size_w
-        
+
+    # --- КЛЮЧЕВОЙ МОМЕНТ: Определяем правильный путь ---
+    if getattr(sys, 'frozen', False):
+        # Если запущено из PyInstaller (onefile или onedir)
+        base_path = sys._MEIPASS
+    else:
+        # Если запущено как скрипт (python main.py)
+        base_path = os.path.abspath(".")
+
+    full_path = os.path.join(base_path, path)
+    # -------------------------------------------
+
     try:
-        # Загрузка с прозрачностью и масштабирование
-        image = pygame.image.load(path).convert_alpha()
+        image = pygame.image.load(full_path).convert_alpha()
         return pygame.transform.scale(image, (size_w, size_h))
     except pygame.error as e:
-        print(f"Ошибка загрузки текстуры {path}: {e}. Используется плейсхолдер.")
-        
-        # Создание цветного плейсхолдера, если файл не найден
+        print(f"Ошибка загрузки текстуры {full_path}: {e}. Используется плейсхолдер.")
         surf = pygame.Surface((size_w, size_h))
         if 'player' in path: surf.fill(BLUE)
         elif 'spike' in path: surf.fill(RED)
