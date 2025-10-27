@@ -2,18 +2,18 @@
 
 # --- Размеры и сетка ---
 SCREEN_WIDTH = 960
-SCREEN_HEIGHT = 720
-TILE_SIZE = 48  # Каждый блок - 48x48 пикселей
+SCREEN_HEIGHT = 960
+TILE_SIZE = 24 # Каждый блок - 48x48 пикселей
 
 # --- Физика ---
 GRAVITY = 0.5
-JUMP_FORCE = -12
+JUMP_FORCE = -10
 PLAYER_SPEED = 5
 FALL_TERMINAL_VELOCITY = 10 # Максимальная скорость падения
 
 # --- Логика игры ---
 KEY_TO_WIN = 3
-FOG_RADIUS = 200 # Радиус видимости вокруг игрока
+FOG_RADIUS = 2000 # Радиус видимости вокруг игрока
 
 # --- Цвета (для временных плейсхолдеров) ---
 WHITE = (255, 255, 255)

@@ -92,10 +92,16 @@ def random_key_spawn():
     # Берем случайные точки для спауна
     spawn_coords = random.sample(available_spawn_points, KEY_TO_WIN)
     
-    for x, y in spawn_coords:
-        key = Key(x, y)
+    # for x, y in spawn_coords:
+    #     key = Key(x, y)
+    #     all_sprites.add(key)
+    #     keys_group.add(key)
+    #  проверка на работу двери
+    for i in range(3):
+        key = Key(72+i* 24, 900)
         all_sprites.add(key)
         keys_group.add(key)
+
 
 def reset_level():
     """Сброс состояния игрока и ключей после попадания на шипы."""
