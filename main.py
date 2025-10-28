@@ -201,14 +201,14 @@ def congratulations_screen():
     screen.fill(GREY) # Яркий праздничный фон
     
     # Центральное поздравление
-    draw_text("ПОЗДРАВЛЯЮ!", screen, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 200), YELLOW, font_large)
+    draw_text("Вiтаю!", screen, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 200), YELLOW, font_large)
     
     # Ваше личное сообщение
     draw_text("З Днем Народження, найгарніша блондинко Відня!", screen, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 150), WHITE)
     draw_text("Ти шалено яскрава і красива!", screen, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 100), WHITE)
     draw_text("Я дуже радий, що познайомився з тобою цього року.", screen, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2-50), WHITE)
     draw_text("Хочу, щоб ти й надалі освітлювала цей світ своєю красою)", screen, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2), WHITE)
-    draw_text("Твой: Миша)", screen, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50), WHITE)
+    draw_text("Твiй: Миша)", screen, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50), WHITE)
 
 # ИЗМЕНЕНО: Функция для отображения экрана помощи (использует font_small)
 def help_screen():

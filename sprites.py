@@ -65,7 +65,7 @@ class Player(pygame.sprite.Sprite):
         self.width = TILE_SIZE // 2
         self.height = TILE_SIZE
         
-        # Визуальное представление (временное)
+        # Визуальное представление
         self.image = load_and_scale(ASSET_PATHS['player'], self.width, self.height)
         self.rect = self.image.get_rect(topleft=(x, y))
         # self.image = pygame.Surface((self.width, self.height))
